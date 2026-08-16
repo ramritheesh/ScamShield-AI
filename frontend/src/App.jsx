@@ -1,5 +1,18 @@
 import { useState, useEffect } from "react";
 
+// =========================================================
+// API CONFIGURATION
+// =========================================================
+
+// Vercel:
+// Set VITE_API_URL to:
+// https://scamshield-ai-dfc5.onrender.com
+
+const API_URL = (
+  import.meta.env.VITE_API_URL ||
+  "https://scamshield-ai-dfc5.onrender.com"
+).replace(/\/$/, "");
+
 function App() {
   const [mode, setMode] = useState("message");
 
@@ -30,7 +43,6 @@ function App() {
     );
   }, [history]);
 
-
   // =========================
   // SCREENSHOT
   // =========================
@@ -38,13 +50,11 @@ function App() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-
   // =========================
   // RESULT
   // =========================
 
   const [result, setResult] = useState(null);
-
 
   // =========================
   // RECOVERY
@@ -56,24 +66,22 @@ function App() {
   const [completedActions, setCompletedActions] =
     useState([]);
 
-
   // =========================
   // LOADING / ERROR
   // =========================
 
   const [loading, setLoading] = useState(false);
+
   const [recoveryLoading, setRecoveryLoading] =
     useState(false);
 
   const [error, setError] = useState("");
-
 
   // =========================================================
   // HISTORY
   // =========================================================
 
   const saveToHistory = (data, scanType) => {
-
     const historyItem = {
       id: Date.now(),
 
@@ -103,7 +111,6 @@ function App() {
     ]);
   };
 
-
   // =========================================================
   // DASHBOARD STATS
   // =========================================================
@@ -121,13 +128,11 @@ function App() {
       item.risk_level === "LOW"
   ).length;
 
-
   // =========================================================
   // CLEAR HISTORY
   // =========================================================
 
   const clearHistory = () => {
-
     const confirmed = window.confirm(
       "Are you sure you want to delete all ScamShield history?"
     );
@@ -137,13 +142,11 @@ function App() {
     }
   };
 
-
   // =========================================================
   // MESSAGE ANALYSIS
   // =========================================================
 
   const analyzeMessage = async () => {
-
     if (!message.trim()) {
       setError(
         "Please enter a message to analyze."
@@ -164,9 +167,13 @@ function App() {
     setCompletedActions([]);
 
     try {
+      console.log(
+        "ScamShield API:",
+        `${API_URL}/analyze`
+      );
 
       const response = await fetch(
-        "http://127.0.0.1:8000/analyze",
+        `${API_URL}/analyze`,
         {
           method: "POST",
 
@@ -181,17 +188,14 @@ function App() {
         }
       );
 
-
       if (!response.ok) {
         throw new Error(
-          "Analysis failed"
+          `Analysis failed: ${response.status}`
         );
       }
 
-
       const data =
         await response.json();
-
 
       setResult(data);
 
@@ -200,39 +204,33 @@ function App() {
         "Message"
       );
 
-
     } catch (err) {
-
-      console.error(err);
+      console.error(
+        "ScamShield analysis error:",
+        err
+      );
 
       setError(
-        "Unable to connect to ScamShield backend. Make sure FastAPI is running."
+        "Unable to connect to ScamShield backend. Please try again."
       );
 
     } finally {
-
       setLoading(false);
-
     }
   };
-
 
   // =========================================================
   // DEMO MESSAGES
   // =========================================================
 
   const loadDemo = (type) => {
-
     const demos = {
-
       job: `Congratulations! You have been selected for a Work From Home position with Amazon. Salary ₹45,000 per month. Pay ₹1,499 registration fee within 20 minutes to confirm your position. Send your Aadhaar, bank details and OTP to our HR manager on WhatsApp.`,
 
       bank: `URGENT: Your bank account will be permanently blocked today due to suspicious activity. Verify your account within 10 minutes by sharing the OTP sent to your mobile number with our customer support executive.`,
 
       investment: `Congratulations! Your investment account has been selected for an exclusive AI trading opportunity. Invest ₹5,000 today and receive guaranteed returns of ₹50,000 within 7 days. Limited slots available. Send your UPI payment screenshot immediately.`,
-
     };
-
 
     setMode("message");
 
@@ -249,31 +247,25 @@ function App() {
     setCompletedActions([]);
 
     setError("");
-
   };
-
 
   // =========================================================
   // SCREENSHOT
   // =========================================================
 
   const handleImageChange = (event) => {
-
     const file =
       event.target.files[0];
-
 
     if (!file) {
       return;
     }
-
 
     if (
       !file.type.startsWith(
         "image/"
       )
     ) {
-
       setError(
         "Please select an image file."
       );
@@ -281,20 +273,16 @@ function App() {
       return;
     }
 
-
     setImageFile(file);
 
     setError("");
 
-
     const previewUrl =
       URL.createObjectURL(file);
-
 
     setImagePreview(
       previewUrl
     );
-
 
     setResult(null);
 
@@ -303,33 +291,31 @@ function App() {
     setSituation("");
 
     setCompletedActions([]);
-
   };
 
-
   const removeImage = () => {
+    if (imagePreview) {
+      URL.revokeObjectURL(
+        imagePreview
+      );
+    }
 
     setImageFile(null);
 
     setImagePreview(null);
 
     setError("");
-
   };
-
 
   const analyzeScreenshot =
     async () => {
-
       if (!imageFile) {
-
         setError(
           "Please select a screenshot first."
         );
 
         return;
       }
-
 
       setLoading(true);
 
@@ -343,41 +329,42 @@ function App() {
 
       setCompletedActions([]);
 
-
       try {
-
         const formData =
           new FormData();
-
 
         formData.append(
           "file",
           imageFile
         );
 
+        // IMPORTANT:
+        // Screenshot endpoint is different
+        // from normal message analysis.
+
+        console.log(
+          "ScamShield API:",
+          `${API_URL}/analyze-screenshot`
+        );
 
         const response =
           await fetch(
-            "http://127.0.0.1:8000/analyze-screenshot",
+            `${API_URL}/analyze-screenshot`,
             {
               method: "POST",
+
               body: formData,
             }
           );
 
-
         if (!response.ok) {
-
           throw new Error(
-            "Screenshot analysis failed"
+            `Screenshot analysis failed: ${response.status}`
           );
-
         }
-
 
         const data =
           await response.json();
-
 
         setResult(data);
 
@@ -386,22 +373,20 @@ function App() {
           "Screenshot"
         );
 
-
       } catch (err) {
-
-        console.error(err);
+        console.error(
+          "ScamShield screenshot error:",
+          err
+        );
 
         setError(
-          "Unable to analyze the screenshot. Make sure FastAPI is running."
+          "Unable to analyze the screenshot. Please try again."
         );
 
       } finally {
-
         setLoading(false);
-
       }
     };
-
 
   // =========================================================
   // RECOVERY AGENT
@@ -409,9 +394,7 @@ function App() {
 
   const generateRecoveryPlan =
     async () => {
-
       if (!situation) {
-
         setError(
           "Please select what happened first."
         );
@@ -419,17 +402,19 @@ function App() {
         return;
       }
 
-
       setRecoveryLoading(true);
 
       setError("");
 
-
       try {
+        console.log(
+          "ScamShield API:",
+          `${API_URL}/recovery`
+        );
 
         const response =
           await fetch(
-            "http://127.0.0.1:8000/recovery",
+            `${API_URL}/recovery`,
             {
               method: "POST",
 
@@ -450,73 +435,59 @@ function App() {
             }
           );
 
-
         if (!response.ok) {
-
           throw new Error(
-            "Recovery request failed"
+            `Recovery request failed: ${response.status}`
           );
-
         }
-
 
         const data =
           await response.json();
-
 
         setRecovery(data);
 
         setCompletedActions([]);
 
-
       } catch (err) {
-
-        console.error(err);
+        console.error(
+          "ScamShield recovery error:",
+          err
+        );
 
         setError(
-          "Unable to generate your recovery plan. Please make sure FastAPI is running."
+          "Unable to generate your recovery plan. Please try again."
         );
 
       } finally {
-
         setRecoveryLoading(
           false
         );
-
       }
     };
-
 
   // =========================================================
   // CHECKLIST
   // =========================================================
 
   const toggleAction = (index) => {
-
     setCompletedActions(
       (previous) => {
-
         if (
           previous.includes(index)
         ) {
-
           return previous.filter(
             (item) =>
               item !== index
           );
-
         }
 
         return [
           ...previous,
           index,
         ];
-
       }
     );
-
   };
-
 
   // =========================================================
   // RESET
@@ -524,10 +495,15 @@ function App() {
 
   const analyzeAnother =
     () => {
-
       setMessage("");
 
       setImageFile(null);
+
+      if (imagePreview) {
+        URL.revokeObjectURL(
+          imagePreview
+        );
+      }
 
       setImagePreview(null);
 
@@ -542,9 +518,7 @@ function App() {
       setError("");
 
       setMode("message");
-
     };
-
 
   // =========================================================
   // RISK CLASS
@@ -552,7 +526,6 @@ function App() {
 
   const getRiskClass =
     (level) => {
-
       if (
         level === "CRITICAL"
       ) {
@@ -574,14 +547,12 @@ function App() {
       return "low";
     };
 
-
   // =========================================================
   // RISK MESSAGE
   // =========================================================
 
   const getRiskMessage =
     (score) => {
-
       if (score >= 90) {
         return "Very likely to be a scam";
       }
@@ -595,14 +566,14 @@ function App() {
       }
 
       return "Few scam indicators detected";
-
     };
 
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
-
     <div className="app">
-
 
       {/* =====================================================
           HEADER
@@ -620,9 +591,7 @@ function App() {
 
       </header>
 
-
       <main className="container">
-
 
         {/* =====================================================
             DASHBOARD
@@ -652,7 +621,6 @@ function App() {
 
                 </div>
 
-
                 <button
                   className="clear-history"
                   onClick={
@@ -664,9 +632,7 @@ function App() {
 
               </div>
 
-
               <div className="stats-grid">
-
 
                 <div className="stat-card">
 
@@ -688,7 +654,6 @@ function App() {
 
                 </div>
 
-
                 <div className="stat-card danger">
 
                   <span className="stat-icon">
@@ -708,7 +673,6 @@ function App() {
                   </div>
 
                 </div>
-
 
                 <div className="stat-card safe">
 
@@ -732,7 +696,6 @@ function App() {
 
               </div>
 
-
               <div className="history-section">
 
                 <div className="history-title">
@@ -746,7 +709,6 @@ function App() {
                   </span>
 
                 </div>
-
 
                 <div className="history-list">
 
@@ -771,7 +733,6 @@ function App() {
 
                             </div>
 
-
                             <div>
 
                               <strong>
@@ -787,7 +748,6 @@ function App() {
                             </div>
 
                           </div>
-
 
                           <div className="history-risk">
 
@@ -823,7 +783,6 @@ function App() {
 
           )}
 
-
         {/* =====================================================
             HERO
         ===================================================== */}
@@ -836,31 +795,21 @@ function App() {
               🛡️ AI-POWERED DIGITAL SAFETY
             </div>
 
-
             <h1>
-
               Don't trust the message.
-
               <br />
 
               <span>
                 Verify it with AI.
               </span>
-
             </h1>
 
-
             <p>
-
               ScamShield analyzes suspicious
               messages and screenshots, explains
               the warning signs, and guides you
               through what to do next.
-
             </p>
-
-
-            {/* TRUST PILLS */}
 
             <div className="trust-pills">
 
@@ -881,7 +830,6 @@ function App() {
           </section>
 
         )}
-
 
         {/* =====================================================
             FEATURE CARDS
@@ -909,7 +857,6 @@ function App() {
 
             </div>
 
-
             <div className="feature-card">
 
               <div className="feature-icon">
@@ -927,7 +874,6 @@ function App() {
               </p>
 
             </div>
-
 
             <div className="feature-card">
 
@@ -950,7 +896,6 @@ function App() {
           </section>
 
         )}
-
 
         {/* =====================================================
             MODE SELECTOR
@@ -978,7 +923,6 @@ function App() {
               💬 Message
             </button>
 
-
             <button
               className={
                 mode === "screenshot"
@@ -1002,7 +946,6 @@ function App() {
           </div>
 
         )}
-
 
         {/* =====================================================
             MESSAGE ANALYZER
@@ -1035,7 +978,6 @@ function App() {
 
               </div>
 
-
               <textarea
                 value={message}
 
@@ -1052,11 +994,9 @@ function App() {
                 placeholder="Paste a suspicious SMS, WhatsApp message, email, job offer, payment request..."
               />
 
-
               <div className="character-count">
                 {message.length} characters
               </div>
-
 
               <button
                 className="analyze-button"
@@ -1074,12 +1014,10 @@ function App() {
 
               </button>
 
-
-              {/* DEMO BUTTONS */}
-
               <div className="demo-section">
 
                 <div className="demo-header">
+
                   <span>
                     Quick demo
                   </span>
@@ -1087,8 +1025,8 @@ function App() {
                   <span>
                     Try a sample
                   </span>
-                </div>
 
+                </div>
 
                 <div className="demo-buttons">
 
@@ -1100,7 +1038,6 @@ function App() {
                     💼 Job Scam
                   </button>
 
-
                   <button
                     onClick={() =>
                       loadDemo("bank")
@@ -1108,7 +1045,6 @@ function App() {
                   >
                     🏦 OTP Scam
                   </button>
-
 
                   <button
                     onClick={() =>
@@ -1125,7 +1061,6 @@ function App() {
             </section>
 
           )}
-
 
         {/* =====================================================
             SCREENSHOT ANALYZER
@@ -1158,7 +1093,6 @@ function App() {
 
               </div>
 
-
               <div className="upload-box">
 
                 <input
@@ -1169,7 +1103,6 @@ function App() {
                     handleImageChange
                   }
                 />
-
 
                 <label
                   htmlFor="screenshot-upload"
@@ -1192,7 +1125,6 @@ function App() {
 
               </div>
 
-
               {imagePreview && (
 
                 <div className="image-preview">
@@ -1201,7 +1133,6 @@ function App() {
                     src={imagePreview}
                     alt="Screenshot preview"
                   />
-
 
                   <button
                     className="remove-image"
@@ -1215,7 +1146,6 @@ function App() {
                 </div>
 
               )}
-
 
               <button
                 className="analyze-button"
@@ -1240,7 +1170,6 @@ function App() {
 
           )}
 
-
         {/* =====================================================
             ERROR
         ===================================================== */}
@@ -1253,7 +1182,6 @@ function App() {
 
         )}
 
-
         {/* =====================================================
             RESULT
         ===================================================== */}
@@ -1261,7 +1189,6 @@ function App() {
         {result && (
 
           <section className="result-card">
-
 
             {/* RESULT HEADER */}
 
@@ -1276,7 +1203,6 @@ function App() {
                     : "💬 MESSAGE ANALYSIS"}
 
                 </div>
-
 
                 <div
                   className={`risk-label ${getRiskClass(
@@ -1300,13 +1226,11 @@ function App() {
 
                 </div>
 
-
                 <h2>
                   {result.scam_type}
                 </h2>
 
               </div>
-
 
               {/* SCORE RING */}
 
@@ -1314,6 +1238,7 @@ function App() {
                 className={`score-ring ${getRiskClass(
                   result.risk_level
                 )}`}
+
                 style={{
                   "--score":
                     `${result.risk_score * 3.6}deg`,
@@ -1336,7 +1261,6 @@ function App() {
 
             </div>
 
-
             <div className="risk-verdict">
 
               <span>
@@ -1351,7 +1275,6 @@ function App() {
 
             </div>
 
-
             {/* SUMMARY */}
 
             <div className="result-section">
@@ -1360,13 +1283,11 @@ function App() {
                 🔎 What we found
               </h3>
 
-
               <p className="summary">
                 {result.summary}
               </p>
 
             </div>
-
 
             {/* EXTRACTED TEXT */}
 
@@ -1378,7 +1299,6 @@ function App() {
                   📝 Extracted Message
                 </h3>
 
-
                 <div className="extracted-text">
                   {result.extracted_text}
                 </div>
@@ -1387,7 +1307,6 @@ function App() {
 
             )}
 
-
             {/* INDICATORS */}
 
             <div className="result-section">
@@ -1395,7 +1314,6 @@ function App() {
               <h3>
                 🚩 Why we're concerned
               </h3>
-
 
               <div className="indicator-list">
 
@@ -1424,7 +1342,6 @@ function App() {
 
             </div>
 
-
             {/* ACTIONS */}
 
             <div className="result-section action-section">
@@ -1432,7 +1349,6 @@ function App() {
               <h3>
                 🛡️ Recommended Actions
               </h3>
-
 
               <div className="action-list">
 
@@ -1461,7 +1377,6 @@ function App() {
 
             </div>
 
-
             {/* CONFIDENCE */}
 
             <div className="confidence">
@@ -1475,7 +1390,6 @@ function App() {
               </strong>
 
             </div>
-
 
             {/* =================================================
                 RECOVERY AGENT
@@ -1503,15 +1417,12 @@ function App() {
 
               </div>
 
-
               <p>
                 Your answer helps ScamShield
                 create a personalized safety plan.
               </p>
 
-
               <div className="situation-options">
-
 
                 <label
                   className={
@@ -1545,7 +1456,6 @@ function App() {
 
                 </label>
 
-
                 <label
                   className={
                     situation ===
@@ -1577,7 +1487,6 @@ function App() {
                   </span>
 
                 </label>
-
 
                 <label
                   className={
@@ -1611,7 +1520,6 @@ function App() {
 
                 </label>
 
-
                 <label
                   className={
                     situation ===
@@ -1643,7 +1551,6 @@ function App() {
                   </span>
 
                 </label>
-
 
                 <label
                   className={
@@ -1679,7 +1586,6 @@ function App() {
 
               </div>
 
-
               <button
                 className="recovery-button"
 
@@ -1699,7 +1605,6 @@ function App() {
               </button>
 
             </div>
-
 
             {/* =================================================
                 RECOVERY PLAN
@@ -1724,19 +1629,24 @@ function App() {
                   </div>
 
                   <div className="recovery-status">
+
                     {
                       completedActions.length
                     }
+
                     /
+
                     {
                       recovery
                         .immediate_actions
                         ?.length || 0
-                    } done
+                    }
+
+                    {" "}done
+
                   </div>
 
                 </div>
-
 
                 {/* IMMEDIATE ACTIONS */}
 
@@ -1746,7 +1656,6 @@ function App() {
                     🚨 Do this now
                   </h3>
 
-
                   {recovery.immediate_actions?.map(
                     (action, index) => {
 
@@ -1754,7 +1663,6 @@ function App() {
                         completedActions.includes(
                           index
                         );
-
 
                       return (
 
@@ -1793,7 +1701,6 @@ function App() {
 
                 </div>
 
-
                 {/* AVOID */}
 
                 <div className="recovery-section">
@@ -1801,7 +1708,6 @@ function App() {
                   <h3>
                     ⚠️ Avoid these actions
                   </h3>
-
 
                   {recovery.things_to_avoid?.map(
                     (item, index) => (
@@ -1824,7 +1730,6 @@ function App() {
 
                 </div>
 
-
                 {/* ACCOUNTS */}
 
                 <div className="recovery-section">
@@ -1832,7 +1737,6 @@ function App() {
                   <h3>
                     🔐 Accounts to secure
                   </h3>
-
 
                   {recovery.accounts_to_secure?.map(
                     (account, index) => (
@@ -1855,7 +1759,6 @@ function App() {
 
                 </div>
 
-
                 {/* EVIDENCE */}
 
                 <div className="recovery-section">
@@ -1863,7 +1766,6 @@ function App() {
                   <h3>
                     📋 Evidence to preserve
                   </h3>
-
 
                   {recovery.evidence_to_preserve?.map(
                     (evidence, index) => (
@@ -1886,7 +1788,6 @@ function App() {
 
                 </div>
 
-
                 {/* WHY */}
 
                 <div className="recovery-explanation">
@@ -1905,11 +1806,11 @@ function App() {
 
             )}
 
-
             {/* ANALYZE ANOTHER */}
 
             <button
               className="again-button"
+
               onClick={
                 analyzeAnother
               }
@@ -1922,7 +1823,6 @@ function App() {
         )}
 
       </main>
-
 
       {/* =====================================================
           FOOTER
